@@ -120,8 +120,12 @@ function logState() {{
   printf(endLog);
 }}
 
+var skipCalls = {num_skip_calls};
+
 Interceptor.attach(symbol_my_malloc.address, {{
   onEnter: function (args) {{
+    if (skipCalls > 0) return;
+
     printf(startLog);
     send("MALLOC");
     printfInt(mallocLog, args[0].toInt32());
@@ -130,12 +134,18 @@ Interceptor.attach(symbol_my_malloc.address, {{
     // printf(Memory.allocUtf8String(args[0].toInt32().toString() + "\\n"));
   }},
   onLeave: function (ret) {{
+    if (skipCalls > 0) {{
+        skipCalls--;
+        return;
+    }}
     logState();
   }}
 }});
 
 Interceptor.attach(symbol_my_free.address, {{
   onEnter: function (args) {{
+    if (skipCalls > 0) return;
+
     printf(startLog);
     send("FREE");
     printf(freeLog);
@@ -143,6 +153,11 @@ Interceptor.attach(symbol_my_free.address, {{
     printf(newlineLog);
   }},
   onLeave: function (ret) {{
+    if (skipCalls > 0) {{
+        skipCalls--;
+        return;
+    }}
+
     logState();
   }}
 }});
@@ -154,7 +169,7 @@ Interceptor.attach(symbol_main.address, {{
   }},
   onLeave: function (ret) {{
     printf(exitLog);
-    send("Exited main");
+    // send("Exited main");
   }}
 }});
 
@@ -271,7 +286,7 @@ def parse_tags(string):
 
 
 class BinAnalyser:
-    def __init__(self, path, filename, queue):
+    def __init__(self, path, filename, queue, num_skip_calls):
         import frida
         from frida_tools.application import Reactor
 
@@ -280,6 +295,7 @@ class BinAnalyser:
         self.path = path
         self.filename = filename
         self.states = queue
+        self.num_skip_calls = num_skip_calls
 
         self._stop_requested = threading.Event()
         self._reactor = Reactor(
@@ -315,7 +331,10 @@ class BinAnalyser:
         session.enable_child_gating()
 
         script = session.create_script(
-            INJECTED_SCRIPT.format(main_module_name=self.filename))
+            INJECTED_SCRIPT.format(
+                main_module_name=self.filename,
+                num_skip_calls=self.num_skip_calls
+            ))
         script.on("message", lambda message, data: self._reactor.schedule(
             lambda: self._on_message(message, data)))  # pylint: disable=undefined-variable
         script.load()
@@ -371,7 +390,11 @@ class BinAnalyser:
         if not self.outputString:
             return
 
-        for string in self.outputString.split('LOG_START_1337\n'):
+        split = self.outputString.split('LOG_START_1337\n')
+        if len(split) == 1:
+            return
+
+        for string in split:
             split = string.split('LOG_END_1337', maxsplit=1)
             if len(split) == 2:
                 state_string_raw = split[0].strip()
@@ -387,8 +410,13 @@ class BinAnalyser:
                             tags=parse_tags(state_string_raw_split[1])
                         ))
                 else:
-                    self.states.append(AllocatorState(
-                        prev_op=None, state_string=state_string_raw))
+                    self.states.put(
+                        AllocatorStateWrapper(
+                            prev_op=None,
+                            freelist_blocks=parse_freelist(
+                                state_string_raw_split[1]),
+                            tags=parse_tags(state_string_raw_split[1])
+                        ))
             else:
                 if "Segmentation fault" in string:
                     logger.error("Segmentation fault occurred")
@@ -469,10 +497,10 @@ def compare(test_states, target_states):
     return True
 
 
-def worker(path, test_name, queue):
+def worker(path, test_name, queue, num_skip_calls):
     logger.info("Processing %s", path)
 
-    ba = BinAnalyser(path, test_name, queue)
+    ba = BinAnalyser(path, test_name, queue, num_skip_calls)
     ba.exec()
     # objgraph.show_most_common_types()
 
@@ -480,6 +508,8 @@ def worker(path, test_name, queue):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('testcase', help='Testcase name. Ex.: test_all_lists')
+    parser.add_argument(
+        '--skip', '-s', dest='num_skip_calls', help='Number of calls to skip. Speeds up analysis. Default: 0', default=0)
     args = parser.parse_args()
 
     test_name = args.testcase
@@ -498,12 +528,12 @@ if __name__ == "__main__":
 
     test_queue = multiprocessing.Queue()
     test_proc = multiprocessing.Process(
-        target=worker, args=(test_path, test_name, test_queue))
+        target=worker, args=(test_path, test_name, test_queue, args.num_skip_calls))
     test_proc.start()
 
     target_queue = multiprocessing.Queue()
     target_proc = multiprocessing.Process(
-        target=worker, args=(target_path, test_name, target_queue))
+        target=worker, args=(target_path, test_name, target_queue, args.num_skip_calls))
     target_proc.start()
 
     test_states = []
