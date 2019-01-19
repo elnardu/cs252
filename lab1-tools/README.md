@@ -6,8 +6,18 @@ Compares the allocator state of the testing program to the allocator state of yo
    - `wget https://raw.githubusercontent.com/elnardu/cs252/master/lab1-tools/compare_states.py`
 2. `pip3 install wheel frida-tools`
 3. `python3 compare_states.py test_name`
-   - Please use `-s` option for large testcases (test_simple5, test_simple6)
+   - Please use `-s n`/`--skip n` option for large testcases (test_simple5, test_simple6)
+      - that will skip processing of the first n malloc/free calls
    - **Comment out all your printf's**
+
+Recommended `-s` values for test_simple5:
+- 0
+   - Covers initial state
+   - Wait till it finishes 50-100 states
+- 9999
+   - Covers everything else
+   - Usually where your problems are
+
 
 ### Screenshot
 ![](https://raw.githubusercontent.com/elnardu/cs252/master/lab1-tools/screenshot1.png)
