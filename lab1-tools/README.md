@@ -21,3 +21,6 @@ Recommended `-s` values for test_simple5:
 
 ### Screenshot
 ![](https://raw.githubusercontent.com/elnardu/cs252/master/lab1-tools/screenshot1.png)
+
+
+![](https://i.kym-cdn.com/entries/icons/mobile/000/027/456/kowalski.jpg)
