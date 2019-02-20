@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- I WAS TOO LAZY -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <link rel="stylesheet" href="cd/flipclock.css">
+
+    <title>CS252 Shell Countdown</title>
+
+    <style>
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            background: #004355;
+        }
+
+        video {
+            min-height: 100%;
+            min-width: auto;
+            border: 0;
+            margin: 0;
+        }
+
+        .video-container {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            border: 0;
+            margin: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            z-index: 1;
+        }
+
+        .dark {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            border: 0;
+            margin: 0;
+
+            display: block;
+            background: black;
+            opacity: 0.5;
+            z-index: 2;
+        }
+
+        .clock-container {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            border: 0;
+            margin: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+
+            z-index: 5;
+            color: white;
+        }
+
+        .flip-clock-wrapper {
+            width: auto !important;
+        }
+
+        .flip-clock-label {
+            color: white !important;
+        }
+
+        h1 {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="video-container">
+        <!-- pic by https://www.reddit.com/r/Purdue/comments/7x548v/shell_project_cs252_irl/ -->
+        <video src="cd/out.mp4" autoplay muted loop></video>
+    </div>
+
+    <div class="dark"></div>
+
+    <div class="clock-container">
+        <h1>Part 2 deadline</h1>
+        <div class="clock"></div>
+    </div>
+
+
+    
+    <!-- Oh no, I sinned -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+    integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    
+    <script src="cd/flipclock.min.js"></script>
+
+    <script type="text/javascript">
+        var date = new Date(2019, 1, 26);
+        var now = new Date();
+        var diff = (date.getTime() / 1000) - (now.getTime() / 1000);
+
+        var clock = $('.clock').FlipClock(diff, {
+            clockFace: 'DailyCounter',
+            countdown: true
+        });  
+    </script>
+
+</body>
+
+</html>
