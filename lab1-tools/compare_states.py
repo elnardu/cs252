@@ -76,13 +76,13 @@ for (var i = 0; i < symbols.length; i++) {{
 }}
 
 var printf = new NativeFunction(
-  Module.findExportByName("libc-2.27.so", "printf"),
+  Module.findExportByName(null, "printf"),
   "void",
   ["pointer"]
 );
 
 var printfInt = new NativeFunction(
-  Module.findExportByName("libc-2.27.so", "printf"),
+  Module.findExportByName(null, "printf"),
   "void",
   ["pointer", "int"]
 );
